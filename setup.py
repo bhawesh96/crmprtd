@@ -37,6 +37,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
+            'download_bch=crmprtd.bch.download:main',
             'download_ec=crmprtd.ec.download:main',
             'download_moti=crmprtd.moti.download:main',
             'download_wamr=crmprtd.wamr.download:main',
