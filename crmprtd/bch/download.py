@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 def download(url_template, station):
     log.info("Starting BCH Download")
-    url = url_template.format(station)
+    url = url_template.format(station.lower())
     scheme, _ = url.split(':', 1)
     https_download(url, scheme, log)
 
