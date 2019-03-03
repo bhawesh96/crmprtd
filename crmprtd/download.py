@@ -4,9 +4,12 @@ import ftplib
 import logging
 import csv
 from functools import wraps
+from argparse import ArgumentParser
 
 import yaml
 import requests
+
+from crmprtd import setup_logging, logging_args
 
 
 def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
@@ -162,3 +165,34 @@ def https_download(url, scheme='https', log=None, auth=None, payload={}):
 
     for line in resp.iter_content(chunk_size=None):
         sys.stdout.buffer.write(line)
+
+
+def download_by_station(url_template, station, network_name, log):
+    log.info("Starting {} Download".format(network_name))
+    url = url_template.format(station)
+    scheme, _ = url.split(':', 1)
+    https_download(url, scheme, log)
+
+
+def main_download_by_station(default_url_template,
+                             logger_name, network_name, log):
+    def main():
+        parser = ArgumentParser()
+        parser.add_argument(
+            '-u', '--url_template',
+            default=default_url_template,
+            help='URL with a single parameter for station ID'
+        )
+        parser.add_argument(
+            '-s', '--station_id', required=True,
+            help="Station ID for which to download data")
+        parser = logging_args(parser)
+        args = parser.parse_args()
+
+        setup_logging(args.log_conf, args.log_filename, args.error_email,
+                      args.log_level, logger_name)
+
+        download_by_station(
+            args.url_template, args.station_id, network_name, log
+        )
+    return main
