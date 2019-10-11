@@ -2,6 +2,7 @@
 [run]
     source = crmprtd
     omit =
+        crmprtd/process.py
         crmprtd/db_excptions
         crmprtd/ec/download.py
         crmprtd/moti/download.py

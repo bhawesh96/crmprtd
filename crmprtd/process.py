@@ -10,7 +10,7 @@ from crmprtd.insert import insert
 from crmprtd import logging_args, setup_logging
 
 
-def process_args(parser): # pragma: no cover
+def process_args(parser):
     parser.add_argument('-c', '--connection_string',
                         help='PostgreSQL connection string',
                         required=True)
@@ -68,7 +68,7 @@ def process(connection_string, sample_size, network):
     log.info('Data insertion results', extra={'results': results})
 
 
-def main(): # pragma: no cover
+def main():
     parser = ArgumentParser()
     parser = process_args(parser)
     parser = logging_args(parser)
