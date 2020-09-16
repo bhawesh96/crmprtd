@@ -1,6 +1,5 @@
 # Downloads data from BC hyrdo
 
-
 import pysftp
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
 import logging
@@ -12,7 +11,6 @@ from argparse import ArgumentParser
 from crmprtd import logging_args, setup_logging, common_auth_arguments
 
 log = logging.getLogger(__name__)
-
 
 def download(username, auth_key, ftp_server, ftp_dir):
     # Connect FTP server and retrieve file
@@ -38,7 +36,6 @@ def download(username, auth_key, ftp_server, ftp_dir):
                                 file = open(txt_file, mode='r')
                                 tempfile.write(file.read())
                                 os.remove(os.getcwd() + '/' + txt_file)                
-                        
                 tempfile.seek(0)
                 for line in tempfile.readlines():
                     sys.stdout.buffer.write(line.encode('utf-8'))
@@ -55,6 +52,7 @@ def main():
     parser.add_argument('-f', '--ftp_server',
                         default='sftp2.bchydro.com',
                         help=('Full uri to BC Hydro\'s ftp server'))
+
     parser.add_argument('-F', '--ftp_dir',
                         default=('pcic'),
                         help=('FTP Directory containing BC hydro\'s data files'))
