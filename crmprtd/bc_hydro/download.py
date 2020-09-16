@@ -9,8 +9,9 @@ from argparse import ArgumentParser
 
 #used
 import pysftp
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, SpooledTemporaryFile
 import os
+from zipfile import ZipFile
 
 from crmprtd import logging_args, setup_logging, common_auth_arguments
 
@@ -18,22 +19,39 @@ log = logging.getLogger(__name__)
 
 
 def download(username, auth_key, ftp_server, ftp_dir):
-    sftp = pysftp.Connection(ftp_server, username = username, 
-                            private_key = auth_key)
-    with TemporaryDirectory() as tmp_dir:
-        print('created temporary directory', tmp_dir)
-        sftp.get_r(ftp_dir, tmp_dir)
-        print(os.listdir(tmp_dir))
-        os.chdir(os.path.expanduser(tmp_dir + '/' + ftp_dir))
-        print(os.getcwd())
+    # Connect FTP server and retrieve file
+    try:
+        sftp = pysftp.Connection(ftp_server, username = username, 
+                                private_key = auth_key)
+        with TemporaryDirectory() as tmp_dir:
+            sftp.get_r(ftp_dir, tmp_dir)
+            os.chdir(os.path.expanduser(tmp_dir + '/' + ftp_dir))
 
-    # try:
-    #     sftp = pysftp.Connection(ftp_server, username = username, 
-    #                         private_key = auth_key)
-    #     #sftp.get_r(ftp_dir, )
-    #     sftp.close()  
-    # except Exception as e:
-    #     print("Unable to process ftp")
+            with SpooledTemporaryFile(
+                    max_size=int(os.environ.get('CRMPRTD_MAX_CACHE', 2**20)),
+                    mode='r+') as tempfile:
+
+                for filename in os.listdir(os.getcwd()):
+                    try:
+                        zip_file = ZipFile(filename, 'r')
+                        zip_file.extractall()
+                        for txt_file in os.listdir(os.getcwd()):
+                            name, extension = os.path.splitext(txt_file)
+                            if extension == '.txt':
+                                file = open(txt_file, mode='r')
+                                tempfile.write(file.read())
+                                os.remove(os.getcwd() + '/' + txt_file)
+                        
+                    except:                    
+                        #not a zip file
+                        pass
+                        
+                tempfile.seek(0)
+                for line in tempfile.readlines():
+                    sys.stdout.buffer.write(line.encode('utf-8'))
+    except Exception as e:
+        log.exception("Unable to process ftp")
+
 def main():
     desc = globals()['__doc__']
     parser = ArgumentParser(description=desc)
