@@ -60,7 +60,8 @@ setup(
                       'pytz',
                       'requests[security]',
                       'pycds >= 2.0.0',
-                      'pint'
+                      'pint',
+                      'pysftp'
                       ],
     tests_require=['pytest',
                    'pysqlite'
