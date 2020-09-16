@@ -12,11 +12,12 @@ from crmprtd import logging_args, setup_logging, common_auth_arguments
 
 log = logging.getLogger(__name__)
 
+
 def download(username, auth_key, ftp_server, ftp_dir):
     # Connect FTP server and retrieve file
     try:
-        sftp = pysftp.Connection(ftp_server, username = username, 
-                                private_key = auth_key)
+        sftp = pysftp.Connection(ftp_server, username=username, 
+                                 private_key = auth_key)
         with TemporaryDirectory() as tmp_dir:
             sftp.get_r(ftp_dir, tmp_dir)
             os.chdir(os.path.expanduser(tmp_dir + '/' + ftp_dir))
@@ -55,13 +56,15 @@ def main():
 
     parser.add_argument('-F', '--ftp_dir',
                         default=('pcic'),
-                        help=('FTP Directory containing BC hydro\'s data files'))
+                        help=('FTP Directory containing BC hydro\'s '
+                              'data files'))
     args = parser.parse_args()
 
     setup_logging(args.log_conf, args.log_filename, args.error_email,
                   args.log_level, 'crmprtd.bc_hydro')
 
     download(args.username, args.auth_key, args.ftp_server, args.ftp_dir)
+
 
 if __name__ == "__main__":
     main()
