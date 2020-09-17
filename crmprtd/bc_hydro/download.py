@@ -31,7 +31,7 @@ def download(username, gpg_private_key, ftp_server, ftp_dir, start_date, end_dat
         sftp = pysftp.Connection(ftp_server, username=username,
                                  private_key=gpg_private_key)
     except AuthenticationException:
-        log.exception("Invalid Authentication")
+        log.exception("Invalid ftp authentication")
         sys.exit(1)
 
     try:
@@ -50,6 +50,7 @@ def download(username, gpg_private_key, ftp_server, ftp_dir, start_date, end_dat
     except IOError:
         log.exception("Unable to download or open files")
         sys.exit(1)
+
 
 class DateRange():
 
