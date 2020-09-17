@@ -24,13 +24,14 @@ from crmprtd import logging_args, setup_logging, common_auth_arguments
 log = logging.getLogger(__name__)
 
 
-def download(username, gpg_private_key, ftp_server, ftp_dir, start_date, end_date):
+def download(username, gpg_private_key, ftp_server, ftp_dir, start_date,
+             end_date):
 
     # Connect FTP server and retrieve file
     try:
         sftp = pysftp.Connection(ftp_server, username=username,
                                  private_key=gpg_private_key)
-    except AuthenticationException:
+    except Exception:
         log.exception("Invalid ftp authentication")
         sys.exit(1)
 
@@ -53,7 +54,6 @@ def download(username, gpg_private_key, ftp_server, ftp_dir, start_date, end_dat
 
 
 class DateRange():
-
 
     def __init__(self, start_date, end_date, sftp):
         self.start_date = start_date
@@ -98,11 +98,11 @@ def main():
     parser.add_argument('-s', '--start_date',
                         default=(start),
                         help=('Download data beginning from this day '
-                            '(yymmdd). Defaults to 1 month ago.'))
+                              '(yymmdd). Defaults to 1 month ago.'))
     parser.add_argument('-e', '--end_date',
                         default=(end),
                         help=('Download data ending from this day '
-                            '(yymmdd). Defaults to today.'))
+                              '(yymmdd). Defaults to today.'))
     args = parser.parse_args()
 
     setup_logging(args.log_conf, args.log_filename, args.error_email,
