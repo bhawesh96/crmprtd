@@ -13,19 +13,25 @@ ns = {
 }
 
 
+def now():  # Dumb to be its own function, but this makes it mockable
+    return datetime.utcnow()
+
+
 def no_ns_element(name):
     '''returns the xpath string to search for and element of name "name"
        without a namespace'''
     return "*[local-name()='{}']".format(name)
 
 
-def makeurl(freq='daily', province='BC', language='e', time=datetime.utcnow()):
+def makeurl(freq='daily', province='BC', language='e', time=None):
     """Construct a URL for fetching the data file
     freq: daily|hourly
     province: 2 letter province code
     language: 'e' (english) | 'f' (french)
     time: datetime object of the time for which you want to fetch obs
     """
+    if time is None:
+        time = now()
     fmt = '%Y%m%d%H' if freq == 'hourly' else '%Y%m%d'
     freq = 'yesterday' if freq == 'daily' else freq
     fname = '{}_{}_{}_{}.xml'.format(
