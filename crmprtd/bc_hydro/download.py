@@ -17,6 +17,7 @@ import sys
 import re
 from zipfile import ZipFile
 from argparse import ArgumentParser
+from datetime import date, timedelta
 
 from crmprtd import logging_args, setup_logging, common_auth_arguments
 
@@ -83,12 +84,18 @@ def main():
                               'data files'))
     parser.add_argument('-g', '--gpg_private_key',
                         help=('Path to file with GPG private key'))
+    today = date.today()
+    end = today.strftime("%y%m%d")
+    lastMonth = date.today() - timedelta(days=28)
+    start = lastMonth.strftime("%y%m%d")
     parser.add_argument('-s', '--start_date',
+                        default=(start),
                         help=('Download data beginning from this day '
-                            '(yymmdd)'))
+                            '(yymmdd). Defaults to 1 month ago.'))
     parser.add_argument('-e', '--end_date',
+                        default=(end),
                         help=('Download data ending from this day '
-                            '(yymmdd)'))
+                            '(yymmdd). Defaults to today.'))
     args = parser.parse_args()
 
     setup_logging(args.log_conf, args.log_filename, args.error_email,
