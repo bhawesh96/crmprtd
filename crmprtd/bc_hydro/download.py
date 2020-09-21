@@ -3,14 +3,13 @@
 BC Hydro posts a rolling window (3 months) observing hourly data
 once a week. Data is in txt files.
 
-It is recommended to run this script once every 3 months to collect
-all available data, supplemented with aggressive monitoring and
-alerting for errors. If the script is run less than 3 months you
-will miss data.
+It is recommended to run this script once a week to collect
+updated available data, supplemented with monitoring and alerting
+for errors. If the script is run less than once every 3 months
+you will miss data.
 '''
 
 import pysftp
-from tempfile import TemporaryDirectory
 import logging
 import os
 import sys
@@ -18,8 +17,10 @@ import re
 from zipfile import ZipFile
 from argparse import ArgumentParser
 from datetime import date, timedelta
+from functools import partial
+from tempfile import TemporaryDirectory
 
-from crmprtd import logging_args, setup_logging, common_auth_arguments
+from crmprtd import logging_args, setup_logging
 
 log = logging.getLogger(__name__)
 
@@ -27,61 +28,58 @@ log = logging.getLogger(__name__)
 def download(username, gpg_private_key, ftp_server, ftp_dir, start_date,
              end_date):
 
-    # Connect FTP server and retrieve file
+    # Connect FTP server and retrieve directory
     try:
         sftp = pysftp.Connection(ftp_server, username=username,
                                  private_key=gpg_private_key)
+
     except Exception:
         log.exception("Invalid ftp authentication")
-        sys.exit(1)
 
+    # Add files to temporary directory then print contents to stdout
     try:
         with TemporaryDirectory() as tmp_dir:
-            os.chdir(os.path.expanduser(tmp_dir))
-            range = DateRange(int(start_date), int(end_date), sftp)
-            sftp.walktree(ftp_dir, range.matchFile, matchDir, unknownType)
-            for filename in os.listdir(os.getcwd()):
-                name, extension = os.path.splitext(filename)
-                if extension == '.zip':
-                    zip_file = ZipFile(filename, 'r')
-                    for name in zip_file.namelist():
-                        txt_file = zip_file.open(name)
-                        sys.stdout.buffer.write(txt_file.read())
+
+            """ Walktree has 4 required arguements, 3 of which are
+             functions with form: func(filename)"""
+            no_op = lambda x: None
+            callback = partial(matchFile, start_date, end_date,
+                               sftp, tmp_dir)
+            sftp.walktree(ftp_dir, callback, no_op, no_op)
+
+            for filename in os.listdir(tmp_dir):
+                file_path = tmp_dir + '/' + filename
+
+                zip_file = ZipFile(file_path, 'r')
+                for name in zip_file.namelist():
+                    txt_file = zip_file.open(name)
+                    sys.stdout.buffer.write(txt_file.read())
 
     except IOError:
-        log.exception("Unable to download or open files")
-        sys.exit(1)
+        log.exception("Unable to download or open some files")
 
 
-class DateRange():
+# Add files within date range to tmp dir
+def matchFile(start_date, end_date, sftp, tmp_dir, filename):
+    match = re.search(r'[0-9]{6}', filename)
+    if match:
+        date = int(match.group(0))
 
-    def __init__(self, start_date, end_date, sftp):
-        self.start_date = start_date
-        self.end_date = end_date
-        self.sftp = sftp
-
-    # Add files within date range to temp dir
-    def matchFile(self, filename):
-        match = re.search(r'[0-9]{6}', filename)
-        if match:
-            date = int(match.group(0))
-        if date >= self.start_date and date <= self.end_date:
-            self.sftp.get(filename)
-
-
-def matchDir(dir):
-    pass
-
-
-def unknownType(file):
-    pass
+        # Get filename, but not directory
+        match = re.search(r'/[^/]*.zip$', filename)
+        if match and date >= int(start_date) and date <= int(end_date):
+            name = match.group(0)
+            file_path = os.path.join(tmp_dir + name)
+            sftp.get(filename, file_path)
 
 
 def main():
     desc = globals()['__doc__']
     parser = ArgumentParser(description=desc)
     parser = logging_args(parser)
-    parser = common_auth_arguments(parser)
+    parser.add_argument('-u', '--username',
+                        default='pcic',
+                        help=('Username for the ftp server '))
     parser.add_argument('-f', '--ftp_server',
                         default='sftp2.bchydro.com',
                         help=('Full uri to BC Hydro\'s ftp server'))
@@ -90,6 +88,7 @@ def main():
                         help=('FTP Directory containing BC hydro\'s '
                               'data files'))
     parser.add_argument('-g', '--gpg_private_key',
+                        required=True,
                         help=('Path to file with GPG private key'))
     today = date.today()
     end = today.strftime("%y%m%d")
